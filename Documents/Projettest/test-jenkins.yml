@@ -1,0 +1,26 @@
+---
+- name: TEST - Vérifier que Jenkins peut exécuter Ansible
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  
+  tasks:
+    - name: Afficher la date et l'heure
+      command: date
+      register: date_result
+      
+    - name: Afficher un message de succès
+      debug:
+        msg: "✅ Jenkins a exécuté Ansible avec succès !"
+      
+    - name: Afficher l'heure de l'exécution
+      debug:
+        var: date_result.stdout
+      
+    - name: Vérifier l'utilisateur actuel
+      command: whoami
+      register: user_result
+      
+    - name: Afficher l'utilisateur
+      debug:
+        msg: "Exécuté par : {{ user_result.stdout }}"s
