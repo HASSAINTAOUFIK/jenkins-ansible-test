@@ -1,26 +1,36 @@
 ---
-- name: TEST - Vérifier que Jenkins peut exécuter Ansible
+- name: Installer WinZip Mac Edition
   hosts: localhost
   connection: local
-  gather_facts: yes
+  vars:
+    dmg_path: "{{ ansible_env.HOME }}/Downloads/winzipmacedition50.dmg"
   
   tasks:
-    - name: Afficher la date et l'heure
-      command: date
-      register: date_result
-      
-    - name: Afficher un message de succès
+    - name: Vérifier et monter DMG
+      command: "hdiutil attach {{ dmg_path }}"
+      register: mount_result
+      ignore_errors: no
+    
+    - name: Copier l'application
+      shell: |
+        VOLUME=$(echo "{{ mount_result.stdout }}" | grep -o '/Volumes/[^ ]*' | head -1)
+        APP=$(find "$VOLUME" -name "*.app" -maxdepth 1 | head -1)
+        if [ -n "$APP" ]; then
+          cp -R "$APP" /Applications/
+          echo "Copied: $APP"
+        fi
+      register: copy_result
+    
+    - name: Nettoyer - Démonter
+      command: "hdiutil detach {{ mount_result.stdout | regex_search('/Volumes/[^\\n]+') | first }}"
+      ignore_errors: yes
+    
+    - name: Vérifier installation
+      stat:
+        path: "/Applications/WinZip Mac Edition.app"
+      register: installed
+    
+    - name: Succès
       debug:
-        msg: "✅ Jenkins a exécuté Ansible avec succès !"
-      
-    - name: Afficher l'heure de l'exécution
-      debug:
-        var: date_result.stdout
-      
-    - name: Vérifier l'utilisateur actuel
-      command: whoami
-      register: user_result
-      
-    - name: Afficher l'utilisateur
-      debug:
-        msg: "Exécuté par : {{ user_result.stdout }}"s
+        msg: "✅ WinZip Mac Edition installé !"
+      when: installed.stat.exists
